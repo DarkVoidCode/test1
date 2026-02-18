@@ -1,0 +1,148 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "Elite Hub V7 | Expert",
+   LoadingTitle = "Injetando Funções...",
+   LoadingSubtitle = "by Gemini AI",
+   ConfigurationSaving = {Enabled = false}
+})
+
+local Player = game.Players.LocalPlayer
+local UIS = game:GetService("UserInputService")
+local FlySpeed = 50
+local Flying = false
+local InfJump = false
+
+---
+-- ABA 1: MOVIMENTAÇÃO
+---
+local Tab1 = Window:CreateTab("Movimentação", 4483362458)
+
+Tab1:CreateSlider({
+   Name = "Velocidade do Fly",
+   Range = {0, 200},
+   Increment = 5,
+   CurrentValue = 50,
+   Callback = function(Value) FlySpeed = Value end,
+})
+
+Tab1:CreateToggle({
+   Name = "Ativar Fly",
+   CurrentValue = false,
+   Callback = function(Value)
+      Flying = Value
+      local char = Player.Character or Player.CharacterAdded:Wait()
+      local hrp = char:WaitForChild("HumanoidRootPart")
+      if Flying then
+         task.spawn(function()
+            while Flying do
+               local camera = workspace.CurrentCamera
+               local moveDir = Vector3.new(0,0,0)
+               if UIS:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + camera.CFrame.LookVector end
+               if UIS:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - camera.CFrame.LookVector end
+               if UIS:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - camera.CFrame.RightVector end
+               if UIS:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + camera.CFrame.RightVector end
+               if UIS:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0,1,0) end
+               if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then moveDir = moveDir - Vector3.new(0,1,0) end
+               if moveDir.Magnitude > 0 then
+                  hrp.CFrame = hrp.CFrame + (moveDir * (FlySpeed/10))
+               end
+               hrp.Velocity = Vector3.new(0, 0.1, 0)
+               task.wait()
+            end
+         end)
+      end
+   end,
+})
+
+Tab1:CreateToggle({
+   Name = "Pulo Infinito",
+   CurrentValue = false,
+   Callback = function(Value) InfJump = Value end,
+})
+
+UIS.JumpRequest:Connect(function()
+    if InfJump then
+        Player.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+    end
+end)
+
+---
+-- ABA 2: TELEPORTES
+---
+local Tab2 = Window:CreateTab("Teleportes", 4483345998)
+
+local function TeleportPro(name)
+    local char = Player.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if (obj:IsA("BasePart") or obj:IsA("Model")) and string.find(string.lower(obj.Name), string.lower(name)) then
+            local targetCFrame = obj:IsA("Model") and obj:GetModelCFrame() or obj.CFrame
+            char.HumanoidRootPart.CFrame = targetCFrame + Vector3.new(0, 20, 0)
+            Rayfield:Notify({Title = "Sucesso", Content = "Teleportado para " .. name, Duration = 2})
+            break
+        end
+    end
+end
+
+local locs = {
+    {Display = "Início", Internal = "Spawn"}, {Display = "Common", Internal = "Common"},
+    {Display = "Raro", Internal = "Rare"}, {Display = "Epic", Internal = "Epic"},
+    {Display = "Lendário", Internal = "Legend"}, {Display = "Mythic", Internal = "Mythic"},
+    {Display = "Secreto", Internal = "Secret"}, {Display = "Celestial", Internal = "Celestial"},
+    {Display = "Godly", Internal = "Godly"}
+}
+
+for _, l in pairs(locs) do
+    Tab2:CreateButton({Name = "Ir para " .. l.Display, Callback = function() TeleportPro(l.Internal) end})
+end
+
+---
+-- ABA 3: INVENTÁRIO (SISTEMA DE DUPE ATUALIZADO)
+---
+local Tab3 = Window:CreateTab("Inventário", 4483362458)
+
+Tab3:CreateSection("Brainhots Exploit")
+
+Tab3:CreateButton({
+   Name = "Duplicar Brainhots (v2 Packet)",
+   Callback = function()
+      local brain = Player.Backpack:FindFirstChild("Brainhots") or Player.Character:FindFirstChild("Brainhots")
+      
+      if brain then
+         Rayfield:Notify({Title = "Processando", Content = "Enviando pacotes de duplicação...", Duration = 3})
+         
+         -- Este loop tenta encontrar o evento de inventário do jogo e disparar ele 50 vezes
+         for i = 1, 50 do
+             task.spawn(function()
+                 -- Tenta achar eventos comuns de troca/inventário
+                 for _, v in pairs(game:GetDescendants()) do
+                     if v:IsA("RemoteEvent") and (v.Name:find("Trade") or v.Name:find("Inventory") or v.Name:find("Equip")) then
+                         v:FireServer(brain, "Equip") -- Tenta forçar o servidor a bugar
+                     end
+                 end
+             end)
+         end
+         Rayfield:Notify({Title = "Dupe Enviado", Content = "Verifique seu inventário.", Duration = 4})
+      else
+         Rayfield:Notify({Title = "Erro", Content = "Coloque o 'Brainhots' no inventário ou na mão!", Duration = 3})
+      end
+   end,
+})
+
+Tab3:CreateSection("Auto-Recolher")
+Tab3:CreateToggle({
+   Name = "Auto-Loot (Pegar do chão)",
+   CurrentValue = false,
+   Callback = function(state)
+       _G.AutoLoot = state
+       while _G.AutoLoot do
+           for _, v in pairs(workspace:GetChildren()) do
+               if v:IsA("Tool") or v:IsA("BasePart") and v.Name:find("Brain") then
+                   Player.Character.HumanoidRootPart.CFrame = v.CFrame
+               end
+           end
+           task.wait(0.5)
+       end
+   end,
+})
